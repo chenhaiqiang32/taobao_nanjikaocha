@@ -24,3 +24,5 @@ dist.*
 *.sln
 *.sw?
 *.rar
+*.zip
+GLB.zip
