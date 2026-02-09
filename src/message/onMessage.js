@@ -838,5 +838,117 @@ export const onMessage = async () => {
     setTimeout(updateStatusDisplay, 100);
 
     console.log("=== 牌子显示控制测试面板已创建 ===");
+
+    // 创建切换场景测试面板
+    const changeIndoorPanel = document.createElement("div");
+    changeIndoorPanel.id = "changeIndoorTestPanel";
+    changeIndoorPanel.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 240px;
+      background: rgba(0, 0, 0, 0.8);
+      border: 2px solid #ff6b6b;
+      border-radius: 8px;
+      padding: 15px;
+      z-index: 10000;
+      font-family: Arial, sans-serif;
+      min-width: 200px;
+    `;
+
+    const changeIndoorTitle = document.createElement("div");
+    changeIndoorTitle.textContent = "切换场景测试";
+    changeIndoorTitle.style.cssText = `
+      color: #ff6b6b;
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      text-align: center;
+    `;
+    changeIndoorPanel.appendChild(changeIndoorTitle);
+
+    // 场景列表
+    const sceneList = [
+      { code: "HSDH", name: "HSDH" },
+      { code: "LJFS", name: "LJFS" },
+      { code: "QN", name: "QN" },
+      { code: "RY", name: "RY" },
+      { code: "WDW", name: "WDW" },
+      { code: "WSCL", name: "WSCL" },
+    ];
+
+    // 创建场景切换按钮
+    sceneList.forEach((scene) => {
+      const button = document.createElement("button");
+      button.textContent = scene.name;
+      button.style.cssText = `
+        display: block;
+        width: 100%;
+        margin: 5px 0;
+        padding: 8px 12px;
+        background: #1a1a2e;
+        color: #ff6b6b;
+        border: 1px solid #ff6b6b;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: all 0.3s;
+      `;
+
+      // 鼠标悬停效果
+      button.addEventListener("mouseenter", () => {
+        button.style.background = "#ff6b6b";
+        button.style.color = "#000";
+      });
+      button.addEventListener("mouseleave", () => {
+        button.style.background = "#1a1a2e";
+        button.style.color = "#ff6b6b";
+      });
+
+      // 点击事件
+      button.addEventListener("click", () => {
+        if (!core) {
+          console.warn("Core 未初始化，无法切换场景");
+          return;
+        }
+
+        console.log(`=== 切换场景: ${scene.name} (${scene.code}) ===`);
+        core.changeIndoor(scene.code);
+        
+        // 按钮点击反馈
+        button.style.background = "#90ee90";
+        button.style.color = "#000";
+        setTimeout(() => {
+          button.style.background = "#1a1a2e";
+          button.style.color = "#ff6b6b";
+        }, 300);
+      });
+
+      changeIndoorPanel.appendChild(button);
+    });
+
+    // 添加关闭按钮
+    const closeChangeIndoorButton = document.createElement("button");
+    closeChangeIndoorButton.textContent = "关闭面板";
+    closeChangeIndoorButton.style.cssText = `
+      display: block;
+      width: 100%;
+      margin-top: 10px;
+      padding: 6px 12px;
+      background: #8b0000;
+      color: #fff;
+      border: 1px solid #8b0000;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    `;
+    closeChangeIndoorButton.addEventListener("click", () => {
+      changeIndoorPanel.remove();
+    });
+    changeIndoorPanel.appendChild(closeChangeIndoorButton);
+
+    // 添加到页面
+    document.body.appendChild(changeIndoorPanel);
+
+    console.log("=== 切换场景测试面板已创建 ===");
   }, 3000); // 延迟3秒执行，确保场景已加载
 };

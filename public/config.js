@@ -15,32 +15,29 @@ window.configs = {
   },
 };
 window.floorToName = {
-  aF01: {
-    path: "inDoor/A001B001",
+  HSDH: {
+    path: "inDoor/HSDH",
     floor: "F01",
   },
-  aF02: {
-    path: "inDoor/A001B001",
-    floor: "F02",
-  },
-  aF03: {
-    path: "inDoor/A001B001",
-    floor: "F03",
-  },
-  bF01: {
-    path: "inDoor/A001B002",
+  LJFS: {
+    path: "inDoor/LJFS",
     floor: "F01",
   },
-  'accl-250t-1': {
-    path: "inDoor/accl-250t-1",
+  QN: {
+    path: "inDoor/QN",
     floor: "F01",
   },
-  'psy-20t-1': {
-    path: "inDoor/psy-20t-1",
+  RY: {
+    path: "inDoor/RY",
     floor: "F01",
   },
-  'wccl-3000t-1': {
-    path: "inDoor/wccl-3000t-1",
+  WDW: {
+    path: "inDoor/WDW",
     floor: "F01",
   },
+  WSCL: {
+    path: "inDoor/WSCL",
+    floor: "F01",
+  },
+  
 };
