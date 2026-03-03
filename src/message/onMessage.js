@@ -77,7 +77,7 @@ export const onMessage = async () => {
   let lastChangeSceneTime = 0; // 记录上一次场景切换的时间
   let isChangingScene = false; // 标记是否正在切换场景
 
-  window.addEventListener("message", (event) => {
+  window.addEventListener("message", async (event) => {
     if (!core) {
       console.warn("Store3D 实例尚未初始化");
       return;
@@ -159,6 +159,23 @@ export const onMessage = async () => {
               isChangingScene = false;
             }, 500); // 500ms后允许下一次切换
           }, 200); // 增加到200ms防抖延迟
+          break;
+        }
+        case "setOutdoorFloor": {
+          // 参数: '1F' | '2F' | '3F' | 'all'，控制室外楼栋只显示对应模型
+          const floor = event.data.param;
+          const validFloors = ["1F", "2F", "3F", "all"];
+          if (!floor || !validFloors.includes(floor)) {
+            console.warn("setOutdoorFloor 无效参数:", floor);
+            break;
+          }
+          const isIndoor = core.currentSystem === core.indoorSubsystem;
+          if (isIndoor) {
+            await core.changeSystem("ground");
+          }
+          if (core.ground) {
+            core.ground.setOutdoorFloorVisible(floor);
+          }
           break;
         }
         case "setWanderState": {
@@ -955,5 +972,94 @@ export const onMessage = async () => {
     document.body.appendChild(changeIndoorPanel);
 
     console.log("=== 切换场景测试面板已创建 ===");
+
+    // 创建室外楼栋显示测试面板
+    const outdoorFloorPanel = document.createElement("div");
+    outdoorFloorPanel.id = "outdoorFloorTestPanel";
+    outdoorFloorPanel.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 440px;
+      background: rgba(0, 0, 0, 0.8);
+      border: 2px solid #9b59b6;
+      border-radius: 8px;
+      padding: 15px;
+      z-index: 10000;
+      font-family: Arial, sans-serif;
+      min-width: 140px;
+    `;
+    const outdoorFloorTitle = document.createElement("div");
+    outdoorFloorTitle.textContent = "室外楼栋显示";
+    outdoorFloorTitle.style.cssText = `
+      color: #9b59b6;
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      text-align: center;
+    `;
+    outdoorFloorPanel.appendChild(outdoorFloorTitle);
+    const floorOptions = [
+      { param: "1F", name: "只显示1F" },
+      { param: "2F", name: "只显示2F" },
+      { param: "3F", name: "只显示3F" },
+      { param: "all", name: "显示全部" },
+    ];
+    floorOptions.forEach(({ param, name }) => {
+      const btn = document.createElement("button");
+      btn.textContent = name;
+      btn.style.cssText = `
+        display: block;
+        width: 100%;
+        margin: 5px 0;
+        padding: 6px 12px;
+        background: #1a1a2e;
+        color: #9b59b6;
+        border: 1px solid #9b59b6;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: all 0.3s;
+      `;
+      btn.addEventListener("mouseenter", () => {
+        btn.style.background = "#9b59b6";
+        btn.style.color = "#000";
+      });
+      btn.addEventListener("mouseleave", () => {
+        btn.style.background = "#1a1a2e";
+        btn.style.color = "#9b59b6";
+      });
+      btn.addEventListener("click", () => {
+        if (!core) {
+          console.warn("Core 未初始化");
+          return;
+        }
+        window.postMessage({ cmd: "setOutdoorFloor", param }, "*");
+        btn.style.background = "#90ee90";
+        btn.style.color = "#000";
+        setTimeout(() => {
+          btn.style.background = "#1a1a2e";
+          btn.style.color = "#9b59b6";
+        }, 300);
+      });
+      outdoorFloorPanel.appendChild(btn);
+    });
+    const closeOutdoorFloorBtn = document.createElement("button");
+    closeOutdoorFloorBtn.textContent = "关闭面板";
+    closeOutdoorFloorBtn.style.cssText = `
+      display: block;
+      width: 100%;
+      margin-top: 10px;
+      padding: 6px 12px;
+      background: #6c3483;
+      color: #fff;
+      border: 1px solid #6c3483;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    `;
+    closeOutdoorFloorBtn.addEventListener("click", () => outdoorFloorPanel.remove());
+    outdoorFloorPanel.appendChild(closeOutdoorFloorBtn);
+    document.body.appendChild(outdoorFloorPanel);
+    console.log("=== 室外楼栋显示测试面板已创建 ===");
   }, 3000); // 延迟3秒执行，确保场景已加载
 };

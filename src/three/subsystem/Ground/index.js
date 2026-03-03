@@ -146,7 +146,11 @@ export class Ground extends CustomSystem {
 
     // 待处理的工艺模型数据（模型未加载时存储，加载后应用）
     this.pendingModelData = {};
-
+    this.floorBuilding= {
+      "1F": 'null',
+      "2F": 'null',
+      "3F": 'null',
+    }
     this.init();
   }
 
@@ -710,6 +714,7 @@ string} name
             child.userData.buildingName = name;
           }
         });
+        this.floorBuilding[childs.name] = childs;
         // this.setBuildingBoard(childs);
       });
       this.cameraResetModel = model;
@@ -1339,6 +1344,66 @@ string} name
       } else {
         value.visible = false;
       }
+    });
+  }
+
+  /**
+   * 切换楼层：只显示对应楼层（其他隐藏），视角切换到该楼层
+   * @param {string} floor - '1F' | '2F' | '3F' | 'all'（all 为显示全部并恢复默认视角）
+   */
+  setOutdoorFloorVisible(floor) {
+    const showAll = floor === "all";
+
+    // 选 1F/2F/3F：只显示对应项，floorBuilding 中其他全部隐藏；选 all：所有存储的都要显示
+    Object.keys(this.floorBuilding).forEach((key) => {
+      const obj = this.floorBuilding[key];
+      if (obj && typeof obj === "object" && "visible" in obj) {
+        obj.visible = showAll || key === floor;
+      }
+    });
+
+    if (showAll) {
+      this.resetCamera(1000);
+      return;
+    }
+
+    // 视角切换到对应楼层（changeTo 会修改 start 的 x/y/z，必须传相机与 target 的引用，不能传 clone）
+    const targetBuilding = this.floorBuilding[floor];
+    if (
+      !targetBuilding ||
+      typeof targetBuilding !== "object" ||
+      !("visible" in targetBuilding)
+    ) {
+      return;
+    }
+    const { radius, center } = getBoxCenter(targetBuilding);
+    center.y += radius * 0.01;
+    const finalCameraPosition = new THREE.Vector3(
+      center.x,
+      center.y + 24,
+      center.z - radius * 1.68
+    );
+    const controlsTarget = center.clone();
+    const duration = 1000;
+
+    this.tweenControl.changeTo({
+      start: this.camera.position,
+      end: finalCameraPosition,
+      duration,
+      onComplete: () => {
+        this.controls.enabled = true;
+      },
+      onStart: () => {
+        this.controls.enabled = false;
+      },
+    });
+    this.tweenControl.changeTo({
+      start: this.controls.target,
+      end: controlsTarget,
+      duration,
+      onUpdate: () => {
+        this.camera.lookAt(this.controls.target);
+      },
     });
   }
 
