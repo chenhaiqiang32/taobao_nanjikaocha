@@ -309,7 +309,6 @@ function handleModelAnimations(gltf, model) {
       
       console.log(`✅ 动画 "${actualName}", "${animationName}", 已添加到管理器（未自动播放）`);
     });
-
     // 启动全局动画更新循环（但不播放任何动画）
     globalAnimationManager.play();
     

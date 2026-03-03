@@ -17,6 +17,7 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import { SunnyTexture, Weather } from "../../components/weather";
 
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { Water } from "three/examples/jsm/objects/Water.js";
 import { createInstanceMesh } from "../../../lib/InstanceMesh";
 import { getBoxCenter } from "../../../lib/box3Fun";
 import { createBuildingInfoLabel, createBuildingNameLabel } from "./boardTitle";
@@ -82,6 +83,7 @@ export class Ground extends CustomSystem {
     // this.scene.background = SunnyTexture;
     // 设置环境贴图，确保在模型加载前可用
     // this.setHDRSky();
+    this.setEnvironment("default");
     this.onRenderQueue = core.onRenderQueue;
     this.controls = core.controls;
     this.baseCamera = core.baseCamera;
@@ -104,6 +106,7 @@ export class Ground extends CustomSystem {
     this._add(this.labelGroup);
 
     this.groundMesh = null;
+    this.water = null; // 水面效果对象
     this.cameraResetModel = null;
     this.fencePlate = null;
     this.gatherOrSilentPlate = null;
@@ -190,9 +193,45 @@ export class Ground extends CustomSystem {
   }
 
   /**
+   * 初始化水面效果（参考 WaterLayer：法线贴图、阳光/水体颜色、波纹、每帧更新时间）
+   */
+  initWater() {
+    const waterRadius = 8000; // 水面圆形半径，与场景尺度匹配
+    const waterLevel = this.altitude ?? -20; // 水面高度
+    const geometry = new THREE.CircleGeometry(waterRadius, 64);
+    const normalMap = new THREE.TextureLoader().load(
+      "./textures/waternormals.jpg",
+      (texture) => {
+        texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+      }
+    );
+    const sunDirection = new THREE.Vector3();
+    const phi = THREE.MathUtils.degToRad(90 - 2);
+    const theta = THREE.MathUtils.degToRad(180);
+    sunDirection.setFromSphericalCoords(1, phi, theta).normalize();
+
+    this.water = new Water(geometry, {
+      textureWidth: 512,
+      textureHeight: 512,
+      waterNormals: normalMap,
+      sunDirection,
+      sunColor: new THREE.Color("#ffffff"),
+      waterColor: new THREE.Color("#001e0f"),
+      distortionScale: 3.7,
+      size: 1,
+      fog: this.scene.fog !== undefined,
+    });
+    this.water.rotation.x = -Math.PI / 2;
+    this.water.position.set(0, waterLevel, 0);
+    this.water.name = "groundWater";
+    this.scene.add(this.water);
+  }
+
+  /**
    * 初始化各个组件 - 在模型加载完成后调用
    */
   initComponents() {
+    this.initWater(); // 初始化水面效果
     // 初始化各个组件
     this.fencePlate = new FencePlate(this.scene, this);
     this.escapeRoute = new EscapeRoutePlate(this.scene, this);
@@ -422,6 +461,16 @@ export class Ground extends CustomSystem {
     this.boxSelect.onLoad(this);
     this.filterBuildingNum(); // 每次进入都要调用一下筛选
 
+    // 重新将水面加入场景（onLeave 时已移除）
+    if (this.water) {
+      this.scene.add(this.water);
+    }
+
+    // 重新注册渲染队列（onLeave 时已 delete("ground")，否则切回室外后 update 不再执行）
+    if (this.core && this.core.onRenderQueue) {
+      this.core.onRenderQueue.set("ground", this.update.bind(this));
+    }
+
     // 重新创建提示框（如果在 onLeave 中被销毁了）
     if (!this.tooltip) {
       this.tooltip = new Tooltip();
@@ -434,7 +483,7 @@ export class Ground extends CustomSystem {
     if (this.groundMesh) {
       this.onLoaded();
       this.isLoaded = true;
-      this.setHDRSky();
+      // this.setHDRSky();
     }
   }
 
@@ -1322,6 +1371,11 @@ string} name
       this.buildingHoverRings.hide();
     }
 
+    // 离开时从场景移除水面（进入时再添加回来）
+    if (this.water) {
+      this.scene.remove(this.water);
+    }
+
     // 清理环境贴图资源
     this.clearEnvironment();
 
@@ -1332,6 +1386,7 @@ string} name
   }
   onLoaded() {
     // 模型加载完成后，比对并应用待处理的数据
+    globalAnimationManager.playAnimation('All Animations');
     this.applyAllPendingModelData();
     if (!this.useCameraState) {
       autoRotate(this);
@@ -1578,7 +1633,7 @@ string} name
 
     const finalCameraPosition = new THREE.Vector3(
       center.x,
-      center.y+32,
+      center.y+24,
       center.z - radius * 1.68
     );
     const controlsTarget = center.clone();
@@ -1691,6 +1746,10 @@ string} name
         }
       });
     }
+    // 更新水面动画（与参考 WaterLayer 一致：每帧推进 time）
+    if (this.water && this.water.material && this.water.material.uniforms) {
+      this.water.material.uniforms["time"].value += 1 / 60;
+    }
   }
 
   destroy() {
@@ -1725,6 +1784,19 @@ string} name
         material.dispose();
       });
       this.glowMaterials = [];
+    }
+
+    // 清理水面资源
+    if (this.water) {
+      this.scene.remove(this.water);
+      if (this.water.geometry) this.water.geometry.dispose();
+      if (this.water.material) {
+        if (this.water.material.uniforms && this.water.material.uniforms.normalSampler?.value) {
+          this.water.material.uniforms.normalSampler.value.dispose();
+        }
+        this.water.material.dispose();
+      }
+      this.water = null;
     }
 
     // 清理环境贴图资源

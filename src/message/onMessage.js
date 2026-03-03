@@ -874,6 +874,7 @@ export const onMessage = async () => {
       { code: "RY", name: "RY" },
       { code: "WDW", name: "WDW" },
       { code: "WSCL", name: "WSCL" },
+      { code: "ground", name: "首页" },
     ];
 
     // 创建场景切换按钮
@@ -910,9 +911,13 @@ export const onMessage = async () => {
           console.warn("Core 未初始化，无法切换场景");
           return;
         }
-
-        console.log(`=== 切换场景: ${scene.name} (${scene.code}) ===`);
-        core.changeIndoor(scene.code);
+        if (scene.name === "首页") {
+          core.changeSystem("ground");
+          return;
+        } else {  
+          console.log(`=== 切换场景: ${scene.name} (${scene.code}) ===`);
+          core.changeIndoor(scene.code);
+        }
         
         // 按钮点击反馈
         button.style.background = "#90ee90";
