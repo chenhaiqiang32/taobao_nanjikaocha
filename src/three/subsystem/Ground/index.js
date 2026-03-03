@@ -1577,9 +1577,9 @@ string} name
     center.y += radius * 0.01;
 
     const finalCameraPosition = new THREE.Vector3(
-      center.x - radius * 1.2,
-      center.y-4,
-      center.z - radius * 0.68
+      center.x,
+      center.y+32,
+      center.z - radius * 1.68
     );
     const controlsTarget = center.clone();
 
@@ -1615,7 +1615,7 @@ string} name
   }
   initLight() {
     // 设置 RoomEnvironment 环境效果
-    this.setEnvironment("hdr");
+    // this.setEnvironment("hdr");
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 1.45); // 线性SRG
     const directionalLight = new THREE.DirectionalLight(0xffffff, 1.55);
